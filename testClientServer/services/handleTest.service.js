@@ -1,11 +1,35 @@
 const axios = require("axios")
 
+const LIMIT_TIME = 500
+
+const calResTime = async (testData) => {
+    const _startTime = new Date().getTime();
+    const targetTestResult = await reqToTarget(testData)
+    const _endTime = new Date().getTime();
+    const resMs = _endTime - _startTime
+    console.log(`testDataId(${testData.id}) 응답 속도: ${resMs} ms`)
+    const httpStatusCode = targetTestResult.status
+    const dataResult = targetTestResult.data
+    let isSuccess = false
+    // 성공 여부 판정 s
+    if (httpStatusCode >= 200 && httpStatusCode < 300) {
+        isSuccess = true
+    }
+
+    // e
+    return {
+        resMs,
+        httpStatusCode,
+        isSuccess,
+        dataResult: dataResult ? JSON.stringify(dataResult): JSON.stringify({})
+    }
+}
+
 const reqToTarget = async (testData) => {
     const instance = axios.create({
         baseURL: testData.host,
         headers: testData.header
     });
-
     const path = getPath(testData.path, testData.query, testData.parameter)
     let result;
     try {
@@ -32,12 +56,14 @@ const reqToTarget = async (testData) => {
                 return null
         }
     } catch (e) {
-        return e
+        // return e
+        return e.response
     }
 }
 
 module.exports = {
-    reqToTarget
+    reqToTarget,
+    calResTime
 }
 
 const getPath = (pathStr, query, parameter) => {

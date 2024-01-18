@@ -62,11 +62,10 @@ const createTestData = async (req, res) => {
 // testCase 저장
 const createTestCase = async (req, res) => {
     try {
-        const testDataId = req.params.testDataId
         const testCase = req.body
         // mysql 저장
         try {
-            await dbService.insertTestCase(testDataId, testCase)
+            await dbService.insertTestCase(testCase)
             res.status(httpStatus.OK).send({ data: true })
         } catch (e) {
             BAD_REQUEST(res)
@@ -81,25 +80,44 @@ const createTestCase = async (req, res) => {
 const runTest = async (req, res) => {
     try {
         const testCaseId = req.params.testCaseId
-        const testDataIds = await dbService.getTestDataIdByTestCaseId(testCaseId)
+        const testDataIds = await dbService.getTestDataIdsByTestCaseId(testCaseId)
         // 1. test할 데이터 db에서 불러오기
-        const testDataResult = await dbService.getTestDataCollection(testDataId[0]["test_data_id"])
+        let dataContentsArr = []
+        if (testDataIds.length > 0) {
+            for (const dataId of testDataIds) {
+                dataContentsArr.push(await dbService.getTestDataCollection(dataId["id"]))
+            }
+        } else {
+            res.status(httpStatus.NO_CONTENT).send({ data: false })
+        }
         // 2. target api서버에 테스트 요청 보내기
-        const _startTime = new Date().getTime();
-        const targetTestResult = await testService.reqToTarget(testDataResult[0])
-        const _endTime = new Date().getTime();
-        const resMs = _endTime - _startTime
-        console.log("응답 속도(ms)", resMs)
-        // console.log(targetTestResult)
-        const cookieResult = targetTestResult
-        const httpStatusCodeResult = targetTestResult.status
-        const dataResult = targetTestResult.data
-        // 3. target api서버 응답 결과 db에 저장하기
+        let testCaseTime = 0 // 테스트 케이스 작업 소요 시간
+        let successRes = 0
+        for (const val of dataContentsArr) {
+            const _startTime = new Date().getTime();
+            const testResult = await testService.calResTime(val[0])
+            const _endTime = new Date().getTime()
+            testCaseTime += (Math.floor(_endTime/1000) - Math.floor(_startTime/1000))
+            // 3. target api서버 응답 결과 db에 저장하기
+            await dbService.insertTestResult(testResult, testCaseId)
+            testResult.isSuccess && (successRes += 1)
+        }
+        // 4. 테스트 케이스 결과 정리하기
+        const testCaseEndTime = Math.floor(Date.now()/1000)
+        const testCaseStartTime = testCaseEndTime - testCaseTime
+        const testSuccessRatio = Math.round(successRes / dataContentsArr.length * 100)/100
+        const testErrorRatio = Math.round((1 - testSuccessRatio) * 100)/100
+        const testCaseResult = {
+            testCaseStartTime,
+            testCaseEndTime,
+            testSuccessRatio : String(testSuccessRatio),
+            testErrorRatio : String(testErrorRatio)
+        }
+        // 테스트 케이스 저장
+        await dbService.insertTestCaseResult(testCaseResult, testCaseId)
 
-        // 4. 응답받은 데이터 결과 정리하기
-
-        // 5. 응답받은 데이터 결과 클라이언트에 응답하기
-        res.status(httpStatus.OK).send({ data: true })
+        // 5. 테스트 케이스 결과 클라이언트에 응답하기
+        res.status(httpStatus.OK).send({ data: testCaseResult })
     } catch (e) {
         SERVER_ERROR(res)
     }
