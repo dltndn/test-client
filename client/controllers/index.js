@@ -1,0 +1,1 @@
+module.exports.reqGetMethod = require("./reqGetMethod.controller")
