@@ -12,7 +12,7 @@ router.route('/getServerInfo/:serverInfoId').get(userController.getServerInfo)
 router.route('/createTestData/:serverInfoId').post(userController.createTestData)
 
 // 테스트 케이스 저장 
-router.route('/createTestCase/:testDataId').post(userController.createTestCase)
+router.route('/createTestCase').post(userController.createTestCase)
 
 // 테스트 수행 및 결과 저장 
 router.route('/runTest/:testCaseId').get(userController.runTest)
