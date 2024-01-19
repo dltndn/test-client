@@ -46,6 +46,8 @@ const createTestData = async (req, res) => {
     try {
         const serverInfoId = req.params.serverInfoId
         const testData = req.body
+
+        console.log(typeof(serverInfoId))
         // mysql 저장
         try {
             await dbService.insertTestData(serverInfoId, testData)
@@ -94,9 +96,9 @@ const runTest = async (req, res) => {
         let testCaseTime = 0 // 테스트 케이스 작업 소요 시간
         let successRes = 0
         for (const val of dataContentsArr) {
-            const _startTime = new Date().getTime();
+            const _startTime = Date.now()
             const testResult = await testService.calResTime(val[0])
-            const _endTime = new Date().getTime()
+            const _endTime = Date.now()
             testCaseTime += (Math.floor(_endTime/1000) - Math.floor(_startTime/1000))
             // 3. target api서버 응답 결과 db에 저장하기
             await dbService.insertTestResult(testResult, testCaseId)

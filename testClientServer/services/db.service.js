@@ -199,7 +199,7 @@ const insertTestCaseResult = async (testCaseResult, testCaseId) => {
     return new Promise(async (resolve, reject) => {
         try {
             let newId = -1
-            const maxId = await getMaxPk("id", "TestResult")
+            const maxId = await getMaxPk("id", "TestCaseResult")
             newId = maxId + 1
             const qry = `INSERT INTO TestCaseResult (id, test_case_id,test_start_date, test_end_date, test_success_ratio, test_error_ratio) VALUES (${newId}, ${testCaseId}, ${testCaseResult.testCaseStartTime}, ${testCaseResult.testCaseEndTime}, ${testCaseResult.testSuccessRatio}, ${testCaseResult.testErrorRatio});`
             conn.query(qry, (error, results, fields) => {
@@ -218,7 +218,7 @@ const insertTestCaseResult = async (testCaseResult, testCaseId) => {
 function connectDb() {
     conn.connect((err) => {
         if (err) console.error("Db connection error: ", err)
-        else console.log("Db is connected.")
+        else console.log("Db connected.")
     })
 }
 
