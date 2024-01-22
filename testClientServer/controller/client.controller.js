@@ -1,5 +1,6 @@
 const httpStatus = require("http-status");
 const { dbService, testService } = require("../services")
+const { checkNum, checkJson } = require("../utils/validateType")
 
 const SERVER_ERROR = (res) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ data: null })
@@ -28,7 +29,10 @@ const createServerInfo = async (req, res) => {
 // server 정보 가져오기
 const getServerInfo = async (req, res) => {
     try {
-        const serverInfoId = req.params.serverInfoId
+        const serverInfoId = checkNum(req.params.serverInfoId)
+        if (serverInfoId === undefined) {
+            BAD_REQUEST(res)
+        }
         // select id
         try {
             const data = await dbService.selectServerInfo(serverInfoId)
@@ -44,10 +48,22 @@ const getServerInfo = async (req, res) => {
 // testData 저장
 const createTestData = async (req, res) => {
     try {
-        const serverInfoId = req.params.serverInfoId
-        const testData = req.body
+        const serverInfoId = checkNum(req.params.serverInfoId)
+        if (serverInfoId === undefined) {
+            BAD_REQUEST(res)
+        }
 
-        console.log(typeof(serverInfoId))
+        const testData = req.body
+        if (checkJson(testData.header) === undefined) {
+            BAD_REQUEST(res)
+        }
+        if (checkJson(testData.body) === undefined) {
+            BAD_REQUEST(res)
+        }
+        if (checkNum(testData.testCaseId) === undefined) {
+            BAD_REQUEST(res)
+        }
+        
         // mysql 저장
         try {
             await dbService.insertTestData(serverInfoId, testData)
@@ -65,6 +81,9 @@ const createTestData = async (req, res) => {
 const createTestCase = async (req, res) => {
     try {
         const testCase = req.body
+        if (checkNum(testCase.interval) === undefined) {
+            BAD_REQUEST(res)
+        }
         // mysql 저장
         try {
             await dbService.insertTestCase(testCase)
@@ -82,6 +101,9 @@ const createTestCase = async (req, res) => {
 const runTest = async (req, res) => {
     try {
         const testCaseId = req.params.testCaseId
+        if (checkNum(testCaseId) === undefined) {
+            BAD_REQUEST(res)
+        }
         const testDataIds = await dbService.getTestDataIdsByTestCaseId(testCaseId)
         // 1. test할 데이터 db에서 불러오기
         let dataContentsArr = []

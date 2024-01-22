@@ -1,4 +1,5 @@
 const axios = require("axios")
+const etc = require("../utils/etc")
 
 const LIMIT_TIME = 500
 
@@ -16,7 +17,7 @@ const calResTime = async (testData) => {
     const httpStatusCode = targetTestResult.status
     const dataResult = targetTestResult.data
     
-    const isSuccess = validateSuccess(resMs, httpStatusCode)
+    const isSuccess = etc.validateSuccess(resMs, httpStatusCode)
     console.log(`성공 여부: ${isSuccess}\n`)
 
     return {
@@ -37,7 +38,7 @@ const reqToTarget = async (testData) => {
         baseURL: testData.host,
         headers: testData.header
     });
-    const path = getPath(testData.path, testData.query, testData.parameter)
+    const path = etc.getPath(testData.path, testData.query, testData.parameter)
     console.log("path:", path)
     let result;
     try {
@@ -73,35 +74,3 @@ module.exports = {
     calResTime
 }
 
-const validateSuccess = (resMs, httpStatusCode) => {
-    if (resMs > LIMIT_TIME) {
-        return false
-    }
-    if (!(httpStatusCode >= 200 && httpStatusCode < 300)) {
-        return false
-    }
-    if (httpStatusCode === 204) {
-        return false
-    }
-    return true
-}
-
-const getPath = (pathStr, query, parameter) => {
-    const pathIndex = pathStr.indexOf("!")
-    const queryIndex = pathStr.indexOf("?")
-    if (pathIndex !== -1) {
-        // path parameter
-        const preStr = pathStr.slice(0, pathIndex)
-        const inStr = parameter
-        const postStr = pathStr.slice(pathIndex+1)
-        return preStr + inStr + postStr
-    }
-    if (queryIndex !== -1) {
-        // query parameter
-        const preStr = pathStr.slice(0, queryIndex)
-        const inStr = `?${query}=${parameter}`
-        const postStr = pathStr.slice(queryIndex+1)
-        return preStr + inStr + postStr
-    }
-    return pathStr
-}
