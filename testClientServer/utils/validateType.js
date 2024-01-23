@@ -11,6 +11,9 @@ const checkNum = (val) => {
 // check isJSON
 const checkJson = (val) => {
     const data = val
+    if (typeof data !== "object") {
+        return undefined
+    }
     if (data.length !== undefined) {
         return undefined
     }

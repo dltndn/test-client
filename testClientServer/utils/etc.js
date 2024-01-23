@@ -1,3 +1,5 @@
+const LIMIT_TIME = 500
+
 const validateSuccess = (resMs, httpStatusCode) => {
     if (resMs > LIMIT_TIME) {
         return false
@@ -12,24 +14,24 @@ const validateSuccess = (resMs, httpStatusCode) => {
 }
 
 
-const getPath = (pathStr, query, parameter) => {
-    const pathIndex = pathStr.indexOf("!")
-    const queryIndex = pathStr.indexOf("?")
-    if (pathIndex !== -1) {
-        // path parameter
-        const preStr = pathStr.slice(0, pathIndex)
-        const inStr = parameter
-        const postStr = pathStr.slice(pathIndex+1)
-        return preStr + inStr + postStr
+const getPath = (pathStr, qryStrList, pathStrList) => {
+    const qryParaList = JSON.parse(qryStrList)
+    const pathParaList = JSON.parse(pathStrList)
+    let path = ""
+    let qryIndex = 0
+    let pathIndex = 0
+    for (const val of pathStr) {
+        if (val === "?") {
+            path += qryParaList[qryIndex]
+            qryIndex++
+        } else if (pathStr[i] === "!") {
+            path += pathParaList[pathIndex]
+            pathIndex++
+        } else {
+            path += val
+        }
     }
-    if (queryIndex !== -1) {
-        // query parameter
-        const preStr = pathStr.slice(0, queryIndex)
-        const inStr = `?${query}=${parameter}`
-        const postStr = pathStr.slice(queryIndex+1)
-        return preStr + inStr + postStr
-    }
-    return pathStr
+    return path
 }
 
 module.exports = {

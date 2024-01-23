@@ -55,7 +55,7 @@ async function main() {
     console.log(`${successAmount}명 성공`)
   }
 
-  claim()
+  deployContracts()
 }
 
 // We recommend this pattern to be able to use async/await everywhere

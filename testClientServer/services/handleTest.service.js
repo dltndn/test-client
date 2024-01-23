@@ -1,8 +1,6 @@
 const axios = require("axios")
 const etc = require("../utils/etc")
 
-const LIMIT_TIME = 500
-
 /**
  * 
  * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
@@ -35,11 +33,10 @@ const calResTime = async (testData) => {
  */
 const reqToTarget = async (testData) => {
     const instance = axios.create({
-        baseURL: testData.host,
+        baseURL: `${testData.protocol}://${testData.host}`,
         headers: testData.header
     });
-    const path = etc.getPath(testData.path, testData.query, testData.parameter)
-    console.log("path:", path)
+    const path = etc.getPath(testData.path, testData.qry_parameter, testData.path_parameter)
     let result;
     try {
         switch (testData.http_method) {

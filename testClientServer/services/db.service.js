@@ -54,8 +54,8 @@ const selectServerInfo = (serverInfoId) => {
 		name: 'test data name'
         method: 'get',
         header: 'JSON',
-        query: 'id' | null,
-        parameter: 3 | null,
+        qry_parameter: 'id' | null,
+        path_parameter: 3 | null,
         path: '/request/transaction/!/receipt',
         body: 'JSON',
         testCaseId: 3
@@ -65,10 +65,10 @@ const insertTestData = async (serverInfoId, testData) => {
     return new Promise(async (resolve, reject) => {
         try {
             let newId = -1
-            const maxId = await getMaxPk("id", "TestData")
+            const maxId = await getMaxPk("id", "WebTestData")
             newId = maxId + 1
-            const qry = `INSERT INTO TestData (id, test_server_id, test_case_id, http_method, header, query, parameter, path, body, name) 
-            VALUES (${newId}, ${serverInfoId}, ${testData.testCaseId}, '${testData.method}', '${JSON.stringify(testData.header)}', '${testData.query}', '${testData.parameter}', '${testData.path}', '${JSON.stringify(testData.body)}', '${testData.name}');`
+            const qry = `INSERT INTO WebTestData (id, test_server_id, test_case_id, http_method, header, qry_parameter, path_parameter, path, body, name) 
+            VALUES (${newId}, ${serverInfoId}, ${testData.testCaseId}, '${testData.method}', '${JSON.stringify(testData.header)}', '${testData.qry_parameter}', ${testData.path_parameter}, '${testData.path}', '${JSON.stringify(testData.body)}', '${testData.name}');`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -90,7 +90,9 @@ const insertTestData = async (serverInfoId, testData) => {
  * @param {testCase} - 
  * {
 		name: 'test case name',
-        interval: 3000
+        interval: 3000,
+        test_start_date,
+        test_end_date
     }
  */
 const insertTestCase = async (testCase) => {
@@ -100,7 +102,7 @@ const insertTestCase = async (testCase) => {
             const maxId = await getMaxPk("id", "TestCase")
             newId = maxId + 1
             const creationDate = Math.floor(Date.now() / 1000);
-            const qry = `INSERT INTO TestCase (id, name, interval_, creation_date) VALUES (${newId}, '${testCase.name}', ${testCase.interval}, ${creationDate});`
+            const qry = `INSERT INTO TestCase (id, name, interval_, creation_date, test_start_date, test_end_date) VALUES (${newId}, '${testCase.name}', ${testCase.interval}, ${creationDate}, ${testCase.test_start_date}, ${testCase.test_end_date});`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -135,7 +137,7 @@ const getTestDataCollection = (testDataId) => {
 }
 
 const getTestDataIdsByTestCaseId = (testCaseId) => {
-    const qry = `SELECT id FROM TestData WHERE test_case_id = ${testCaseId};`
+    const qry = `SELECT id FROM WebTestData WHERE test_case_id = ${testCaseId};`
     return new Promise(async (resolve, reject) => {
         try {
             conn.query(qry, (error, results, fields) => {
@@ -158,17 +160,16 @@ const getTestDataIdsByTestCaseId = (testCaseId) => {
         resMs,
         httpStatusCode,
         isSuccess,
-        dataResult,
-        test_case_id
+        dataResult
     }
  */
-const insertTestResult = async (testResult, testCaseId) => {
+const insertWebTestResult = async (testResult, testCaseId) => {
     return new Promise(async (resolve, reject) => {
         try {
             let newId = -1
-            const maxId = await getMaxPk("id", "TestResult")
+            const maxId = await getMaxPk("id", "WebTestResult")
             newId = maxId + 1
-            const qry = `INSERT INTO TestResult (id, test_case_id, res_ms, http_status_code, is_success, res_data) VALUES (${newId}, ${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
+            const qry = `INSERT INTO WebTestResult (id, test_case_id, res_ms, http_status_code, is_success, res_data) VALUES (${newId}, ${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -189,8 +190,6 @@ const insertTestResult = async (testResult, testCaseId) => {
  * 
  * @param {*} testCaseResult -
  * {
-        testCaseStartTime,
-        testCaseEndTime,
         testSuccessRatio,
         testErrorRatio
     }
@@ -201,7 +200,7 @@ const insertTestCaseResult = async (testCaseResult, testCaseId) => {
             let newId = -1
             const maxId = await getMaxPk("id", "TestCaseResult")
             newId = maxId + 1
-            const qry = `INSERT INTO TestCaseResult (id, test_case_id,test_start_date, test_end_date, test_success_ratio, test_error_ratio) VALUES (${newId}, ${testCaseId}, ${testCaseResult.testCaseStartTime}, ${testCaseResult.testCaseEndTime}, ${testCaseResult.testSuccessRatio}, ${testCaseResult.testErrorRatio});`
+            const qry = `INSERT INTO TestCaseResult (id, test_case_id, test_success_ratio, test_error_ratio) VALUES (${newId}, ${testCaseId}, ${testCaseResult.testSuccessRatio}, ${testCaseResult.testErrorRatio});`
             conn.query(qry, (error, results, fields) => {
                 if (error) {
                     reject(error);
@@ -214,6 +213,36 @@ const insertTestCaseResult = async (testCaseResult, testCaseId) => {
         }
     })
 }
+
+// chain 정보 저장
+const insertChainInfo = ({ label, network_id }) => {
+    return new Promise(async (resolve, reject) => {
+        let newId = -1
+        try {
+            const maxId = await getMaxPk("id", "TestChainInfo")
+            newId = maxId + 1
+            const qry = `INSERT INTO TestChainInfo (id, label, network_id) VALUES ('${newId}', '${label}', ${network_id});`
+            if (newId === -1) {
+                reject("error");
+            }
+            conn.query(qry, (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        } catch (e) {
+            reject(e)
+        }
+    });
+}
+
+// TestTime table 저장
+
+// TestTime table 컬럼 읽기
+
+// TestTime table 컬럼 삭제
 
 function connectDb() {
     conn.connect((err) => {
@@ -236,8 +265,9 @@ module.exports = {
     insertTestCase,
     getTestDataCollection,
     getTestDataIdsByTestCaseId,
-    insertTestResult,
-    insertTestCaseResult
+    insertWebTestResult,
+    insertTestCaseResult,
+    insertChainInfo
 }
 
 /**
@@ -267,10 +297,10 @@ const getMaxPk = (pkName, tableName) => {
 const testDataCollectionQry = (testDataId) => {
     return `
     SELECT 
-    TestData.*, 
+    WebTestData.*, 
     TestServerInfo.*
-    FROM TestData
-    INNER JOIN TestServerInfo ON TestData.test_server_id = TestServerInfo.test_server_id
-    WHERE TestData.id = ${testDataId};
+    FROM WebTestData
+    INNER JOIN TestServerInfo ON WebTestData.test_server_id = TestServerInfo.test_server_id
+    WHERE WebTestData.id = ${testDataId};
     `
 }

@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract TestToken is ERC20, Ownable, ERC20Permit {
     constructor(address initialOwner)
-        ERC20("TestToken", "TTK")
+        ERC20("Sexyqbr", "SQBR")
         Ownable(initialOwner)
-        ERC20Permit("TestToken")
+        ERC20Permit("Sexyqbr")
     {
         _mint(msg.sender, 10000 * 10 ** decimals());
     }

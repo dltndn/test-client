@@ -11,7 +11,7 @@ contract Airdrop is ERC20, Ownable {
 
     constructor(ERC20 _token) 
         Ownable(msg.sender)
-        ERC20("TestToken", "TTK")
+        ERC20("Sexyqbr", "SQBR")
     {
         token = _token;
     }

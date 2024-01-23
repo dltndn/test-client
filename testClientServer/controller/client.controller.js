@@ -1,5 +1,5 @@
 const httpStatus = require("http-status");
-const { dbService, testService } = require("../services")
+const { dbService, testService, ethersService } = require("../services")
 const { checkNum, checkJson } = require("../utils/validateType")
 
 const SERVER_ERROR = (res) => {
@@ -14,6 +14,7 @@ const BAD_REQUEST = (res) => {
 const createServerInfo = async (req, res) => {
     try {
         const serverInfo = req.body
+        await ethersService.ethersTest()
         // mysql 저장
         try {
             await dbService.insertServerInfo(serverInfo)
@@ -22,6 +23,7 @@ const createServerInfo = async (req, res) => {
             BAD_REQUEST(res)
         }
     } catch (e) {
+        console.log(e)
         SERVER_ERROR(res)
     }
 }
@@ -29,10 +31,7 @@ const createServerInfo = async (req, res) => {
 // server 정보 가져오기
 const getServerInfo = async (req, res) => {
     try {
-        const serverInfoId = checkNum(req.params.serverInfoId)
-        if (serverInfoId === undefined) {
-            BAD_REQUEST(res)
-        }
+        const serverInfoId = Number(req.params.serverInfoId)
         // select id
         try {
             const data = await dbService.selectServerInfo(serverInfoId)
@@ -48,22 +47,7 @@ const getServerInfo = async (req, res) => {
 // testData 저장
 const createTestData = async (req, res) => {
     try {
-        const serverInfoId = checkNum(req.params.serverInfoId)
-        if (serverInfoId === undefined) {
-            BAD_REQUEST(res)
-        }
-
-        const testData = req.body
-        if (checkJson(testData.header) === undefined) {
-            BAD_REQUEST(res)
-        }
-        if (checkJson(testData.body) === undefined) {
-            BAD_REQUEST(res)
-        }
-        if (checkNum(testData.testCaseId) === undefined) {
-            BAD_REQUEST(res)
-        }
-        
+        const serverInfoId = Number(req.params.serverInfoId)
         // mysql 저장
         try {
             await dbService.insertTestData(serverInfoId, testData)
@@ -81,9 +65,6 @@ const createTestData = async (req, res) => {
 const createTestCase = async (req, res) => {
     try {
         const testCase = req.body
-        if (checkNum(testCase.interval) === undefined) {
-            BAD_REQUEST(res)
-        }
         // mysql 저장
         try {
             await dbService.insertTestCase(testCase)
@@ -99,6 +80,10 @@ const createTestCase = async (req, res) => {
 
 // test case 수행 및 결과 저장
 const runTest = async (req, res) => {
+    
+
+
+
     try {
         const testCaseId = req.params.testCaseId
         if (checkNum(testCaseId) === undefined) {
@@ -123,7 +108,7 @@ const runTest = async (req, res) => {
             const _endTime = Date.now()
             testCaseTime += (Math.floor(_endTime/1000) - Math.floor(_startTime/1000))
             // 3. target api서버 응답 결과 db에 저장하기
-            await dbService.insertTestResult(testResult, testCaseId)
+            await dbService.insertWebTestResult(testResult, testCaseId)
             testResult.isSuccess && (successRes += 1)
         }
         // 4. 테스트 케이스 결과 정리하기
