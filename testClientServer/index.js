@@ -10,7 +10,6 @@ const PORT = process.env.PORT
 
 // setup CORS
 app.use(cors({ credentials: true, origin: true }));
-app.options('*', cors());
 
 app.use(express.json());
 app.use(routes)

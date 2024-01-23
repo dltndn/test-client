@@ -3,7 +3,7 @@ const { checkNum, checkJson } = require("../utils/validateType")
 
 const CREATE_SERVER_INFO_KEYS = ["name", "protocol", "host"]
 const CREATE_TEST_DATA_KEYS = ["name", "method", "header", "qry_parameter", "path_parameter", "path", "body", "testCaseId"]
-const CREATE_TEST_CASE_KEYS = ["name", "interval", "test_start_date", "test_end_date"]
+const CREATE_TEST_CASE_KEYS = ["name", "interval", "test_start_date", "test_end_date", "is_web_test"]
 const CREATE_CHAIN_INFO_KEYS = ["label", "network_id"]
 
 const BAD_REQUEST = (res) => {

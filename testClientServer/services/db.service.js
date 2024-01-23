@@ -6,8 +6,11 @@ const conn = mysql.createConnection({
     port: env.dbport,
     user: env.user,
     password: env.password,
-    database: env.database
+    database: env.database,
+    multipleStatements: true
 })
+
+const MAX_TEST_TIME_AMOUNT = 500
 
 // server 정보 저장
 const insertServerInfo = ({ name, protocol, host }) => {
@@ -92,7 +95,8 @@ const insertTestData = async (serverInfoId, testData) => {
 		name: 'test case name',
         interval: 3000,
         test_start_date,
-        test_end_date
+        test_end_date,
+        is_web_test
     }
  */
 const insertTestCase = async (testCase) => {
@@ -102,7 +106,7 @@ const insertTestCase = async (testCase) => {
             const maxId = await getMaxPk("id", "TestCase")
             newId = maxId + 1
             const creationDate = Math.floor(Date.now() / 1000);
-            const qry = `INSERT INTO TestCase (id, name, interval_, creation_date, test_start_date, test_end_date) VALUES (${newId}, '${testCase.name}', ${testCase.interval}, ${creationDate}, ${testCase.test_start_date}, ${testCase.test_end_date});`
+            const qry = `INSERT INTO TestCase (id, name, interval_, creation_date, test_start_date, test_end_date, is_web_test) VALUES (${newId}, '${testCase.name}', ${testCase.interval}, ${creationDate}, ${testCase.test_start_date}, ${testCase.test_end_date}, ${testCase.is_web_test});`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -110,13 +114,53 @@ const insertTestCase = async (testCase) => {
                 if (error) {
                     reject(error);
                 } else {
-                    resolve(results);
+                    resolve({ testCaseObj: testCase, testCaseId: newId });
                 }
             });
         } catch (e) {
             reject(e)
         }
     });
+}
+
+/**
+ * 
+ * @description - TestTime 저장
+ * @param {testCase} - 
+ * {
+ *      results: {
+    *      name: 'test case name',
+            interval: 3000,
+            test_start_date,
+            test_end_date,
+            is_web_test
+ *      },
+ *      testCaseId
+ * }
+ */
+const insertTestTime = async ({ testCaseObj, testCaseId }) => {
+    const obj = {
+        interval: Number(testCaseObj.interval),
+        startDate: Number(testCaseObj.test_start_date),
+        endDate: Number(testCaseObj.test_end_date),
+        testCaseId
+    }
+    // targetTime 계산
+    const rows = calTargetTimeRows(obj)
+    return new Promise(async (resolve, reject) => {
+        let qry = 'INSERT INTO TestTime (target_time, test_case_id) VALUES ?';
+        try {
+            conn .query(qry, [rows], (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            })
+        } catch (e) {
+            reject(e)
+        }
+    })
 }
 
 const getTestDataCollection = (testDataId) => {
@@ -267,7 +311,8 @@ module.exports = {
     getTestDataIdsByTestCaseId,
     insertWebTestResult,
     insertTestCaseResult,
-    insertChainInfo
+    insertChainInfo,
+    insertTestTime
 }
 
 /**
@@ -303,4 +348,17 @@ const testDataCollectionQry = (testDataId) => {
     INNER JOIN TestServerInfo ON WebTestData.test_server_id = TestServerInfo.test_server_id
     WHERE WebTestData.id = ${testDataId};
     `
+}
+
+const calTargetTimeRows = ({ interval, startDate, endDate, testCaseId }) => {
+    let rows = [];
+    let targetTime = startDate
+    while (targetTime <= endDate) {
+        if (rows.length > MAX_TEST_TIME_AMOUNT) {
+            return rows
+        }
+        rows.push([targetTime, testCaseId])
+        targetTime += interval
+    }
+    return rows
 }

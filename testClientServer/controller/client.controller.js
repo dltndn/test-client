@@ -67,7 +67,9 @@ const createTestCase = async (req, res) => {
         const testCase = req.body
         // mysql 저장
         try {
-            await dbService.insertTestCase(testCase)
+            const testCaseInsertResult = await dbService.insertTestCase(testCase)
+            // testTime 저장
+            await dbService.insertTestTime(testCaseInsertResult)
             res.status(httpStatus.OK).send({ data: true })
         } catch (e) {
             BAD_REQUEST(res)
@@ -75,6 +77,7 @@ const createTestCase = async (req, res) => {
         }
     } catch (e) {
         SERVER_ERROR(res)
+        console.log(e)
     }
 }
 

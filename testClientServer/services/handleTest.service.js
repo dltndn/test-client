@@ -31,7 +31,7 @@ const calResTime = async (testData) => {
  * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
  * @returns 타켓 엔드포인트의 응답 데이터
  */
-const reqToTarget = async (testData) => {
+const reqToWebTarget = async (testData) => {
     const instance = axios.create({
         baseURL: `${testData.protocol}://${testData.host}`,
         headers: testData.header
@@ -66,8 +66,13 @@ const reqToTarget = async (testData) => {
     }
 }
 
+const reqToChainTarget = async () => {
+
+}
+
 module.exports = {
-    reqToTarget,
-    calResTime
+    calResTime,
+    reqToWebTarget,
+    reqToChainTarget
 }
 
