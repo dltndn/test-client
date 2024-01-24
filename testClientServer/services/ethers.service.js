@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 
-// const jsonRpcUrl = "https://socket-ag.eqhub.eqbr.com?socketKey=FF_v7t9-fpSm4v3dZUnzlRqVoVS5UCwyq-sCrTpR7Ec"
-const jsonRpcUrl = "https://polygon-mumbai.g.alchemy.com/v2/jPoJctKI-kiKK4OCedZzUgSaoBGbJvvf"
+const jsonRpcUrl = "https://socket-ag.eqhub.eqbr.com?socketKey=FF_v7t9-fpSm4v3dZUnzlRqVoVS5UCwyq-sCrTpR7Ec"
+// const jsonRpcUrl = "https://polygon-mumbai.g.alchemy.com/v2/jPoJctKI-kiKK4OCedZzUgSaoBGbJvvf"
 
 const MASTER_PRIVATE = "0x6f00829b4cc33dda5e9cc385ecbb7317f723604399da1a7ef5dbe09d517617ed"
 

@@ -14,7 +14,6 @@ const BAD_REQUEST = (res) => {
 const createServerInfo = async (req, res) => {
     try {
         const serverInfo = req.body
-        await ethersService.ethersTest()
         // mysql 저장
         try {
             await dbService.insertServerInfo(serverInfo)
@@ -47,7 +46,8 @@ const getServerInfo = async (req, res) => {
 // testData 저장
 const createTestData = async (req, res) => {
     try {
-        const serverInfoId = Number(req.params.serverInfoId)
+        const serverInfoId = checkNum(req.params.serverInfoId)
+        const testData = req.body
         // mysql 저장
         try {
             await dbService.insertTestData(serverInfoId, testData)

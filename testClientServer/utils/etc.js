@@ -1,6 +1,6 @@
 const LIMIT_TIME = 500
 
-const validateSuccess = (resMs, httpStatusCode) => {
+const validateWebSuccess = (resMs, httpStatusCode) => {
     if (resMs > LIMIT_TIME) {
         return false
     }
@@ -24,7 +24,7 @@ const getPath = (pathStr, qryStrList, pathStrList) => {
         if (val === "?") {
             path += qryParaList[qryIndex]
             qryIndex++
-        } else if (pathStr[i] === "!") {
+        } else if (val === "!") {
             path += pathParaList[pathIndex]
             pathIndex++
         } else {
@@ -35,6 +35,6 @@ const getPath = (pathStr, qryStrList, pathStrList) => {
 }
 
 module.exports = {
-    validateSuccess,
+    validateWebSuccess,
     getPath
 }

@@ -6,21 +6,37 @@ const etc = require("../utils/etc")
  * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
  * @description - 타켓 엔드포인트의 응답 시간 계산
  */
-const calResTime = async (testData) => {
+const calResTime = async (testData, isWebTest) => {
     const _startTime = Date.now()
-    const targetTestResult = await reqToTarget(testData)
-    const _endTime = Date.now()
-    const resMs = _endTime - _startTime
-    console.log(`testDataId(${testData.id}) 응답 속도: ${resMs} ms`)
-    const httpStatusCode = targetTestResult.status
-    const dataResult = targetTestResult.data
+    let _endTime = 0
+    let resMs = 0
+    let targetTestResult;
+    let isSuccess
+    let dataResult
+    if (isWebTest) {
+        targetTestResult = await reqToWebTarget(testData)
+        _endTime = Date.now()
+        resMs = _endTime - _startTime
+        isSuccess = etc.validateWebSuccess(resMs, targetTestResult.status)
+        dataResult = targetTestResult.data
+        console.log(`WebTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
+        console.log(`성공 여부: ${isSuccess}\n`)
+    } else {
+        targetTestResult = await reqToChainTarget(testData)
+        _endTime = Date.now()
+        resMs = _endTime - _startTime
+        console.log(`ChainTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
+        console.log(`성공 여부: ${isSuccess}\n`)
+    }
     
-    const isSuccess = etc.validateSuccess(resMs, httpStatusCode)
-    console.log(`성공 여부: ${isSuccess}\n`)
-
+    // 실패할 경우 슬랙 알림
+    if (!isSuccess) {
+        
+    }
+    
     return {
         resMs,
-        httpStatusCode,
+        httpStatusCode: targetTestResult.status ? targetTestResult.status : null,
         isSuccess,
         dataResult: dataResult ? JSON.stringify(dataResult): JSON.stringify({})
     }
@@ -28,7 +44,7 @@ const calResTime = async (testData) => {
 
 /**
  * 
- * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
+ * @param {*} testData - WebTestData 테이블과 TestServerInfo 테이블의 모든 컬럼
  * @returns 타켓 엔드포인트의 응답 데이터
  */
 const reqToWebTarget = async (testData) => {
@@ -66,7 +82,7 @@ const reqToWebTarget = async (testData) => {
     }
 }
 
-const reqToChainTarget = async () => {
+const reqToChainTarget = async (testData) => {
 
 }
 

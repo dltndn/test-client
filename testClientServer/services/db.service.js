@@ -71,7 +71,7 @@ const insertTestData = async (serverInfoId, testData) => {
             const maxId = await getMaxPk("id", "WebTestData")
             newId = maxId + 1
             const qry = `INSERT INTO WebTestData (id, test_server_id, test_case_id, http_method, header, qry_parameter, path_parameter, path, body, name) 
-            VALUES (${newId}, ${serverInfoId}, ${testData.testCaseId}, '${testData.method}', '${JSON.stringify(testData.header)}', '${testData.qry_parameter}', ${testData.path_parameter}, '${testData.path}', '${JSON.stringify(testData.body)}', '${testData.name}');`
+            VALUES (${newId}, ${serverInfoId}, ${testData.testCaseId}, '${testData.method}', '${JSON.stringify(testData.header)}', '${JSON.stringify(testData.qry_parameter)}', '${JSON.stringify(testData.path_parameter)}', '${testData.path}', '${JSON.stringify(testData.body)}', '${testData.name}');`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -207,13 +207,45 @@ const getTestDataIdsByTestCaseId = (testCaseId) => {
         dataResult
     }
  */
-const insertWebTestResult = async (testResult, testCaseId) => {
+const insertWebTestResult = async (testResult, testDataId, testCaseId) => {
     return new Promise(async (resolve, reject) => {
         try {
             let newId = -1
             const maxId = await getMaxPk("id", "WebTestResult")
             newId = maxId + 1
-            const qry = `INSERT INTO WebTestResult (id, test_case_id, res_ms, http_status_code, is_success, res_data) VALUES (${newId}, ${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
+            const qry = `INSERT INTO WebTestResult (id, test_data_id, test_case_id, res_ms, http_status_code, is_success, res_data) VALUES (${newId}, ${testDataId},${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
+            conn.query(qry, (error, results, fields) => {
+                if (newId === -1) {
+                    reject("error")
+                } 
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            })
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
+/**
+ * 
+ * @param {*} testResult - 
+ * {
+        resMs,
+        isSuccess,
+        dataResult
+    }
+ */
+const insertChainTestResult = async (testResult, testDataId, testCaseId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let newId = -1
+            const maxId = await getMaxPk("id", "ChainTestResult")
+            newId = maxId + 1
+            const qry = `INSERT INTO WebTestResult (id, test_data_id, test_case_id, res_ms, is_success, res_data) VALUES (${newId}, ${testDataId}, ${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -282,11 +314,50 @@ const insertChainInfo = ({ label, network_id }) => {
     });
 }
 
-// TestTime table 저장
+// TestCase table 컬럼 읽기
+const getTestCase = (testCaseId) => {
+    const qry = `SELECT is_web_test FROM TestCase WHERE id = ${testCaseId}`
+    return new Promise(async (resolve, reject) => {
+        try {
+            conn.query(qry, (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
 
 // TestTime table 컬럼 읽기
+const getTestTime = (minTime, maxTime) => {
+    let qry = `SELECT * FROM TestTime WHERE target_time > ? AND target_time < ?`;
+    let inserts = [minTime, maxTime];
+    // qry = mysql.format(qry, inserts);
+    return new Promise(async (resolve, reject) => {
+        try {
+            conn.query(qry, inserts, (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
 
 // TestTime table 컬럼 삭제
+const deleteTestTime = (testTimeId) => {
+    return new Promise(async (resolve, reject) => {
+
+    })
+}
 
 function connectDb() {
     conn.connect((err) => {
@@ -310,9 +381,13 @@ module.exports = {
     getTestDataCollection,
     getTestDataIdsByTestCaseId,
     insertWebTestResult,
+    insertChainTestResult,
     insertTestCaseResult,
     insertChainInfo,
-    insertTestTime
+    insertTestTime,
+    getTestCase,
+    getTestTime,
+    deleteTestTime
 }
 
 /**
