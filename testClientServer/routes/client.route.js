@@ -3,6 +3,8 @@ const { clientController } = require("../controller")
 const checkReqData = require("../middleware/checkReqData")
 
 const router = express.Router();
+const multer  = require('multer');
+const upload = multer({ dest: 'uploads/', storage: multer.memoryStorage() });
 
 // api 서버 정보 저장
 router.route('/createServerInfo').post(checkReqData.v_createServerInfo, clientController.createServerInfo)
@@ -21,7 +23,10 @@ router.route('/createChainTestData/:chainInfoId').post(checkReqData.v_createChai
 // 테스트 케이스 저장 
 router.route('/createTestCase').post(checkReqData.v_createTestCase, clientController.createTestCase)
 
+// 테스트 케이스 파일 저장 
+router.route('/createTestCaseFile').post(upload.single('file'), clientController.createTestCaseFile)
+
 // 테스트 수행 및 결과 저장 
-router.route('/runTest/:testCaseId').get(clientController.runTest)
+// router.route('/runTest/:testCaseId').get(clientController.runTest)
 
 module.exports = router;

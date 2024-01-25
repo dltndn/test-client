@@ -2,6 +2,7 @@ const httpStatus = require("http-status");
 const { dbService, testService, ethersService } = require("../services")
 const { checkNum, checkJson } = require("../utils/validateType");
 const { sendSlack } = require("../services/etc.service");
+const { xlsxBufferToJson } = require("../utils/etc");
 
 const SERVER_ERROR = (res) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ data: null })
@@ -120,13 +121,34 @@ const createTestCase = async (req, res) => {
     }
 }
 
-// test case 수행 및 결과 저장
+const createTestCaseFile = async (req, res) => {
+    try {
+        const testCaseFile = req.file.buffer
+        const testCaseArr = xlsxBufferToJson(testCaseFile)
+        for (const val of testCaseArr) {
+            // mysql 저장
+            const testCaseInsertResult = await dbService.insertTestCase(val)
+            // testTime 저장
+            await dbService.insertTestTime(testCaseInsertResult)
+        }
+        res.status(httpStatus.OK).send({ data: true })
+    } catch (e) {
+        BAD_REQUEST(res)
+        console.log(e)
+    }
+}
+
+// test case 수행 및 결과 저장 - 삭제됨
 const runTest = async (req, res) => {
     try {
         const testCaseId = req.params.testCaseId
         if (checkNum(testCaseId) === undefined) {
             BAD_REQUEST(res)
         }
+        // is_web_test 정보 가져오기
+        const testCaseR = await dbService.getTestCase(testCaseId)
+        const { is_web_test } = testCaseR[0]
+        console.log("is_web_test:", is_web_test)
         const testDataIds = await dbService.getTestDataIdsByTestCaseId(testCaseId)
         // 1. test할 데이터 db에서 불러오기
         let dataContentsArr = []
@@ -175,7 +197,7 @@ module.exports = {
     getServerInfo,
     createTestData,
     createTestCase,
+    createTestCaseFile,
     createChainInfo,
-    createChainTestData,
-    runTest
+    createChainTestData
 }

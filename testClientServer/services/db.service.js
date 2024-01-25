@@ -493,22 +493,23 @@ const getMaxPk = (pkName, tableName) => {
 const testDataCollectionQry = (testDataId) => {
     return `
     SELECT 
-    WebTestData.*, 
+    A.*, 
     TestServerInfo.*
-    FROM WebTestData
-    INNER JOIN TestServerInfo ON WebTestData.test_server_id = TestServerInfo.test_server_id
-    WHERE WebTestData.id = ${testDataId};
+    FROM WebTestData AS A
+    INNER JOIN TestServerInfo ON A.test_server_id = TestServerInfo.test_server_id
+    WHERE A.id = ${testDataId};
     `
 }
 
 const chainTestDataCollectionQry = (testDataId) => {
     return `
     SELECT 
-    ChainTestData.*, 
-    TestChainInfo.*
-    FROM ChainTestData
-    INNER JOIN TestChainInfo ON ChainTestData.test_chain_id = TestChainInfo.id
-    WHERE ChainTestData.id = ${testDataId};
+    A.*, 
+    TestChainInfo.label,
+    TestChainInfo.network_id
+    FROM ChainTestData AS A
+    INNER JOIN TestChainInfo ON A.test_chain_id = TestChainInfo.id
+    WHERE A.id = ${testDataId};
     `
 }
 
