@@ -12,6 +12,8 @@ const BAD_REQUEST = (res) => {
     res.status(httpStatus.BAD_REQUEST).send({ data: null })
 }
 
+const MAX_TEST_TIME_AMOUNT = 500
+
 // server 정보 저장
 const createServerInfo = async (req, res) => {
     try {
@@ -116,7 +118,10 @@ const createTestCase = async (req, res) => {
             }
             const arr = calTargetTimesArr(obj)
             // target_time 데이터 등록 - redis
-            await redisService.setTargetTimes(arr)
+            const isSuccess = await redisService.setTargetTimes(arr)
+            if (!isSuccess) {
+                SERVER_ERROR(res)
+            }
             res.status(httpStatus.OK).send({ data: true })
         } catch (e) {
             BAD_REQUEST(res)
@@ -144,6 +149,10 @@ const createTestCaseFile = async (req, res) => {
             }
             const arr = calTargetTimesArr(obj)
             // target_time 데이터 등록 - redis
+            const isSuccess = await redisService.setTargetTimes(arr)
+            if (!isSuccess) {
+                SERVER_ERROR(res)
+            }
             await redisService.setTargetTimes(arr)
         }
         res.status(httpStatus.OK).send({ data: true })
@@ -222,7 +231,7 @@ const calTargetTimesArr = ({ interval, startDate, endDate, testCaseId }) => {
     let arr = [];
     let targetTime = startDate
     while (targetTime <= endDate) {
-        if (rows.length > MAX_TEST_TIME_AMOUNT) {
+        if (arr.length > MAX_TEST_TIME_AMOUNT) {
             return arr
         }
         arr.push({

@@ -1,5 +1,5 @@
 const express = require('express')
-const { runTest } = require('./controller/runTest.controller')
+const { runTest, test } = require('./controller/runTest.controller')
 require("dotenv").config();
 const app = express()
 const cron = require('node-cron');
@@ -14,9 +14,9 @@ app.get('/', (req, res) => {
 const server = app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
   redisService.connectRedis()
-  // cron.schedule('*/1 * * * * *', () => {
-  //   runTest()
-  // });
+  cron.schedule('*/1 * * * * *', () => {
+    runTest()
+  });
 })
 
 const exitHandler = () => {

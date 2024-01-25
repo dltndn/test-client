@@ -5,6 +5,6 @@ const checkReqData = require("../middleware/checkReqData")
 const router = express.Router();
 
 // api test 실행
-router.route('/runTest/:testCaseId').get(schedulerController.runTest)
+router.route('/runTest').post(schedulerController.runTest)
 
 module.exports = router

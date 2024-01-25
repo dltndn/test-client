@@ -5,6 +5,9 @@ const LIMIT_INDEX = 0.7
 
 const EXIST_KEY = 'TestClient'
 const TEST_TIME_KEY = 'TestTime'
+const MISSING_IDS = 'MissingIds'
+
+require("dotenv").config();
 
 const client = redis.createClient({
   password: process.env.REDIS_PASSWORD,
@@ -85,14 +88,13 @@ const setTargetTimes = async (targetTimeArr) => {
 }
 
 // target_time 데이터 조회
-const getTestCaseId = async (timestamp) => {
+const getTestCaseIds = async (rangeIndex) => {
     try {
-        const result = await client.zRange(TEST_TIME_KEY, timestamp-1, timestamp+1)
+        const result = await client.zRange(TEST_TIME_KEY, 0, rangeIndex)
         if (result.length === 0) {
             return false
-        }
-        const testCaseId = result[0].split(':')[0];
-        return testCaseId
+        }        
+        return result
     } catch (e) {
         console.log(e)
         return false
@@ -100,10 +102,22 @@ const getTestCaseId = async (timestamp) => {
 }
 
 // target_time 데이터 삭제(현재 기준 과거)
-const deleteTargetTimes = async (curremtTime) => {
+const deleteTargetTimes = async (testCaseIdArr) => {
     try {
-        await client.zRemRangeByScore(TEST_TIME_KEY, 1, curremtTime)
+        await client.zRem(TEST_TIME_KEY, testCaseIdArr)
+        return true
     } catch (e) {
+        return false
+    }
+}
+
+// test 누락된 데이터 저장
+const collectMissingIds = async (missingIdArr) => {
+    try {
+        await client.lPush(MISSING_IDS, missingIdArr)
+        return true
+    } catch (e) {
+        console.log("collectMissingIds error:", e)
         return false
     }
 }
@@ -115,6 +129,7 @@ module.exports = {
   checkDataExists,
   setDataExists,
   setTargetTimes,
-  getTestCaseId,
-  deleteTargetTimes
+  getTestCaseIds,
+  deleteTargetTimes,
+  collectMissingIds
 };

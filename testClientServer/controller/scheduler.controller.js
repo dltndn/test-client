@@ -1,25 +1,23 @@
 const httpStatus = require("http-status")
 const { dbService, testService, ethersService } = require("../services")
 
-const RANGE_INDEX = 2
-
 const runTest = async (req, res) => {
     try {
-        const testCaseId = req.params.testCaseId
-        const testCaseResult = await dbService.getTestCase(testCaseId)
-        let result;
-        if (testCaseResult[0].is_web_test === 0) {
-            // chain test
-            result = await runChainTest(testCaseId)
-        } else if (testCaseResult[0].is_web_test === 1) {
-            // web testreqToChainTarget
-            result = await runWebTest(testCaseId)
+        const { testCaseIds } = req.body
+        
+        for (const testCaseId of testCaseIds) {
+            const testCaseResult = await dbService.getTestCase(testCaseId)
+            let result;
+            if (testCaseResult[0].is_web_test === 0) {
+                // chain test
+                result = await runChainTest(testCaseId)
+            } else if (testCaseResult[0].is_web_test === 1) {
+                // web testreqToChainTarget
+                result = await runWebTest(testCaseId)
+            }
+            // test case 결과 저장
+            await dbService.insertTestCaseResult(result, testCaseId)
         }
-        // if (result === null) {
-        //     res.status(httpStatus.NO_CONTENT).send({ data: true })
-        // }
-        // test case 결과 저장
-        await dbService.insertTestCaseResult(result, testCaseId)
 
         // 4. test 완료 컬럼들 TestTime table에서 삭제 - 보류
 
