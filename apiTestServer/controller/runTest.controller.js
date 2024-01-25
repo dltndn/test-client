@@ -9,6 +9,7 @@ const runTest = async () => {
     const path = "/schedule/runTest"
     try {
         await instance.get(path)
+        console.log(`${Math.floor(Date.now() / 1000)}s`)
     } catch (e) {
         console.error("error:", e)
     }

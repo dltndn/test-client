@@ -3,6 +3,7 @@ const { checkNum, checkJson } = require("../utils/validateType")
 
 const CREATE_SERVER_INFO_KEYS = ["name", "protocol", "host"]
 const CREATE_TEST_DATA_KEYS = ["name", "method", "header", "qry_parameter", "path_parameter", "path", "body", "testCaseId"]
+const CREATE_CHAIN_TEST_DATA_KEYS = ["testCaseId", "node_url", "name"]
 const CREATE_TEST_CASE_KEYS = ["name", "interval", "test_start_date", "test_end_date", "is_web_test"]
 const CREATE_CHAIN_INFO_KEYS = ["label", "network_id"]
 
@@ -47,6 +48,18 @@ const v_createTestData = (req, res, next) => {
     }
 }
 
+const v_createChainTestData = (req, res, next) => {
+    const chainInfoId = checkNum(req.params.chainInfoId)
+    if (chainInfoId === undefined) {
+        BAD_REQUEST(res)
+    }
+    if (!hasAllKeys(CREATE_CHAIN_TEST_DATA_KEYS, req.body)) {
+        BAD_REQUEST(res)
+    } else {
+        next()
+    }
+}
+
 const v_createChainInfo = (req, res, next) => {
     if (!hasAllKeys(CREATE_CHAIN_INFO_KEYS, req.body)) {
         BAD_REQUEST(res)
@@ -60,6 +73,7 @@ module.exports = {
     v_getServerInfo,
     v_createTestCase,
     v_createTestData,
+    v_createChainTestData,
     v_createChainInfo
 }
 

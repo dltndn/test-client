@@ -1,6 +1,7 @@
 const httpStatus = require("http-status");
 const { dbService, testService, ethersService } = require("../services")
-const { checkNum, checkJson } = require("../utils/validateType")
+const { checkNum, checkJson } = require("../utils/validateType");
+const { sendSlack } = require("../services/etc.service");
 
 const SERVER_ERROR = (res) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ data: null })
@@ -15,6 +16,7 @@ const createServerInfo = async (req, res) => {
     try {
         const serverInfo = req.body
         // mysql 저장
+        await sendSlack()
         try {
             await dbService.insertServerInfo(serverInfo)
             res.status(httpStatus.OK).send({ data: true })
@@ -33,7 +35,7 @@ const getServerInfo = async (req, res) => {
         const serverInfoId = Number(req.params.serverInfoId)
         // select id
         try {
-            const data = await dbService.selectServerInfo(serverInfoId)
+            await dbService.selectServerInfo(serverInfoId)
             res.status(httpStatus.OK).send({ data: true })
         } catch (e) {
             BAD_REQUEST(res)
@@ -61,6 +63,43 @@ const createTestData = async (req, res) => {
     }
 }
 
+// chain 정보 저장
+const createChainInfo = async (req, res) => {
+    try {
+        const chainInfo = req.body
+        // mysql 저장
+        try {
+            await dbService.insertChainInfo(chainInfo)
+            res.status(httpStatus.OK).send({ data: true })
+        } catch (e) {
+            BAD_REQUEST(res)
+        }
+    } catch (e) {
+        console.log(e)
+        SERVER_ERROR(res)
+    }
+}
+
+// chainTestData 저장
+const createChainTestData = async (req, res) => {
+    try {
+        const chainInfoId = checkNum(req.params.chainInfoId)
+        const testData = req.body
+        // mysql 저장
+        try {
+            await dbService.insertChainTestData(chainInfoId, testData)
+            res.status(httpStatus.OK).send({ data: true })
+        } catch (e) {
+            console.log(e)
+            BAD_REQUEST(res)
+        }
+
+    } catch (e) {
+        console.log(e)
+        SERVER_ERROR(res)
+    }
+}
+
 // testCase 저장
 const createTestCase = async (req, res) => {
     try {
@@ -83,10 +122,6 @@ const createTestCase = async (req, res) => {
 
 // test case 수행 및 결과 저장
 const runTest = async (req, res) => {
-    
-
-
-
     try {
         const testCaseId = req.params.testCaseId
         if (checkNum(testCaseId) === undefined) {
@@ -140,5 +175,7 @@ module.exports = {
     getServerInfo,
     createTestData,
     createTestCase,
+    createChainInfo,
+    createChainTestData,
     runTest
 }

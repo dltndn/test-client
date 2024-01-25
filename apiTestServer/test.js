@@ -1,4 +1,3 @@
-const ethers = require('ethers');
 const Web3 = require('web3');
 
 /**
@@ -18,10 +17,8 @@ const testNodeState = async (rpcUrl) => {
     } catch (e) {
         resObj.errorData = e
     }
+    console.log(resObj)
     return resObj
 }
 
-
-module.exports = {
-    testNodeState
-}
+testNodeState("")

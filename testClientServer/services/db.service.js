@@ -89,6 +89,40 @@ const insertTestData = async (serverInfoId, testData) => {
 }
 
 /**
+ * 
+ * @description - chain test data 저장 
+ * @param {testData} - 
+ * {
+        testCaseId: 2,
+        node_url: "https://polygon-mumbai.g.alchemy.com/v2/apiKey",
+        name: "eqbr node"
+    }
+ * 
+ */
+const insertChainTestData = async (chainInfoId, testData) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let newId = -1
+            const maxId = await getMaxPk("id", "ChainTestData")
+            newId = maxId + 1
+            const qry = `INSERT INTO ChainTestData (id, test_case_id, test_chain_id, node_url, name) VALUES (${newId}, ${testData.testCaseId}, ${chainInfoId}, '${testData.node_url}', '${testData.name}');`
+            conn.query(qry, (error, results, fields) => {
+                if (newId === -1) {
+                    reject("error")
+                }
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        } catch (e) {
+            reject(e)
+        }
+    });
+}
+
+/**
  * @description - test case 저장
  * @param {testCase} - 
  * {
@@ -128,7 +162,7 @@ const insertTestCase = async (testCase) => {
  * @description - TestTime 저장
  * @param {testCase} - 
  * {
- *      results: {
+ *      testCaseObj: {
     *      name: 'test case name',
             interval: 3000,
             test_start_date,
@@ -163,6 +197,7 @@ const insertTestTime = async ({ testCaseObj, testCaseId }) => {
     })
 }
 
+// WebTestData
 const getTestDataCollection = (testDataId) => {
     return new Promise(async (resolve, reject) => {
         const qry = testDataCollectionQry(testDataId)
@@ -180,8 +215,46 @@ const getTestDataCollection = (testDataId) => {
     })
 }
 
+// WebTestData
 const getTestDataIdsByTestCaseId = (testCaseId) => {
     const qry = `SELECT id FROM WebTestData WHERE test_case_id = ${testCaseId};`
+    return new Promise(async (resolve, reject) => {
+        try {
+            conn.query(qry, (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            })
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
+// ChainTestData
+const getChainTestDataCollection = (testDataId) => {
+    return new Promise(async (resolve, reject) => {
+        const qry = chainTestDataCollectionQry(testDataId)
+        try {
+            conn.query(qry, (error, results, fields) => {
+                if (error) {
+                    console.log(error)
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            })
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
+// ChainTestData
+const getChainTestDataIdsByTestCaseId = (testCaseId) => {
+    const qry = `SELECT id FROM ChainTestData WHERE test_case_id = ${testCaseId};`
     return new Promise(async (resolve, reject) => {
         try {
             conn.query(qry, (error, results, fields) => {
@@ -245,7 +318,7 @@ const insertChainTestResult = async (testResult, testDataId, testCaseId) => {
             let newId = -1
             const maxId = await getMaxPk("id", "ChainTestResult")
             newId = maxId + 1
-            const qry = `INSERT INTO WebTestResult (id, test_data_id, test_case_id, res_ms, is_success, res_data) VALUES (${newId}, ${testDataId}, ${testCaseId}, ${testResult.resMs}, ${testResult.httpStatusCode}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
+            const qry = `INSERT INTO ChainTestResult (id, test_data_id, test_case_id, res_ms, is_success, res_data) VALUES (${newId}, ${testDataId}, ${testCaseId}, ${testResult.resMs}, ${testResult.isSuccess ? 1:0}, ${JSON.stringify(testResult.dataResult)});`
             conn.query(qry, (error, results, fields) => {
                 if (newId === -1) {
                     reject("error")
@@ -380,10 +453,13 @@ module.exports = {
     insertTestCase,
     getTestDataCollection,
     getTestDataIdsByTestCaseId,
+    getChainTestDataCollection,
+    getChainTestDataIdsByTestCaseId,
     insertWebTestResult,
     insertChainTestResult,
     insertTestCaseResult,
     insertChainInfo,
+    insertChainTestData,
     insertTestTime,
     getTestCase,
     getTestTime,
@@ -422,6 +498,17 @@ const testDataCollectionQry = (testDataId) => {
     FROM WebTestData
     INNER JOIN TestServerInfo ON WebTestData.test_server_id = TestServerInfo.test_server_id
     WHERE WebTestData.id = ${testDataId};
+    `
+}
+
+const chainTestDataCollectionQry = (testDataId) => {
+    return `
+    SELECT 
+    ChainTestData.*, 
+    TestChainInfo.*
+    FROM ChainTestData
+    INNER JOIN TestChainInfo ON ChainTestData.test_chain_id = TestChainInfo.id
+    WHERE ChainTestData.id = ${testDataId};
     `
 }
 

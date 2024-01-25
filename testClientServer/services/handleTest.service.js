@@ -1,5 +1,8 @@
 const axios = require("axios")
-const etc = require("../utils/etc")
+const Web3 = require('web3');
+const etc = require("../utils/etc");
+const { testNodeState } = require("./ethers.service");
+const { sendSlack } = require("./etc.service");
 
 /**
  * 
@@ -12,34 +15,50 @@ const calResTime = async (testData, isWebTest) => {
     let resMs = 0
     let targetTestResult;
     let isSuccess
-    let dataResult
+    let resObj = {
+        resMs: 0,
+        isSuccess: false,
+        dataResult: ""
+    }
     if (isWebTest) {
         targetTestResult = await reqToWebTarget(testData)
         _endTime = Date.now()
         resMs = _endTime - _startTime
         isSuccess = etc.validateWebSuccess(resMs, targetTestResult.status)
-        dataResult = targetTestResult.data
+        resObj.resMs = resMs
+        resObj.isSuccess = isSuccess
+        resObj.dataResult = JSON.stringify(targetTestResult.data)
+        resObj["httpStatusCode"] = targetTestResult.status
         console.log(`WebTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
         console.log(`성공 여부: ${isSuccess}\n`)
     } else {
-        targetTestResult = await reqToChainTarget(testData)
+        const targetTestResult = await reqToChainTarget(testData.node_url)
         _endTime = Date.now()
         resMs = _endTime - _startTime
+        targetTestResult.chainId ? (isSuccess = true) : (isSuccess = false)
+        resObj.resMs = resMs
+        resObj.isSuccess = isSuccess
+        resObj.dataResult = JSON.stringify(targetTestResult)
         console.log(`ChainTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
         console.log(`성공 여부: ${isSuccess}\n`)
     }
     
     // 실패할 경우 슬랙 알림
     if (!isSuccess) {
-        
+        // error 발생 시간, test data id, server or chain name, test data name, res data
+        let slackMsg = `        * 에러 정보 * \n
+        ${new Date().toLocaleString("ko-KR")} \n
+        ${testData.name} \n
+        ${resObj.dataResult}
+        `
+        if (await sendSlack(slackMsg)) {
+            console.log("Error 메세지 발송 성공(Slack)")
+        } else {
+            console.log("Error 메세지 발송 실패(Slack)")
+        }
     }
     
-    return {
-        resMs,
-        httpStatusCode: targetTestResult.status ? targetTestResult.status : null,
-        isSuccess,
-        dataResult: dataResult ? JSON.stringify(dataResult): JSON.stringify({})
-    }
+    return resObj
 }
 
 /**
@@ -82,8 +101,13 @@ const reqToWebTarget = async (testData) => {
     }
 }
 
-const reqToChainTarget = async (testData) => {
-
+/**
+ * 
+ * @param {*} rpcUrl 
+ * @returns obj { chainId: null | number, errorData: string }
+ */
+const reqToChainTarget = async (rpcUrl) => {
+    return await testNodeState(rpcUrl)
 }
 
 module.exports = {
@@ -91,4 +115,3 @@ module.exports = {
     reqToWebTarget,
     reqToChainTarget
 }
-
