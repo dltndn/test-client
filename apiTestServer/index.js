@@ -1,8 +1,11 @@
 const express = require('express')
 const { runTest } = require('./controller/runTest.controller')
+require("dotenv").config();
 const app = express()
 const cron = require('node-cron');
 const port = 8081
+
+const redisService = require('./service/redis.service')
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
@@ -10,10 +13,10 @@ app.get('/', (req, res) => {
 
 const server = app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
-  
-  cron.schedule('*/2 * * * * *', () => {
-    runTest()
-  });
+  redisService.connectRedis()
+  // cron.schedule('*/1 * * * * *', () => {
+  //   runTest()
+  // });
 })
 
 const exitHandler = () => {
@@ -34,3 +37,11 @@ const exitHandler = () => {
 
 process.on('uncaughtException', unexpectedErrorHandler);
 process.on('unhandledRejection', unexpectedErrorHandler);
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received');
+  if (server) {
+    redisService.disconnectRedis()
+    server.close();
+  }
+});

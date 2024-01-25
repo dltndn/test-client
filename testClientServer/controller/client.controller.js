@@ -1,5 +1,5 @@
 const httpStatus = require("http-status");
-const { dbService, testService, ethersService } = require("../services")
+const { dbService, testService, redisService, ethersService } = require("../services")
 const { checkNum, checkJson } = require("../utils/validateType");
 const { sendSlack } = require("../services/etc.service");
 const { xlsxBufferToJson } = require("../utils/etc");
@@ -17,7 +17,6 @@ const createServerInfo = async (req, res) => {
     try {
         const serverInfo = req.body
         // mysql 저장
-        await sendSlack()
         try {
             await dbService.insertServerInfo(serverInfo)
             res.status(httpStatus.OK).send({ data: true })
@@ -105,11 +104,19 @@ const createChainTestData = async (req, res) => {
 const createTestCase = async (req, res) => {
     try {
         const testCase = req.body
-        // mysql 저장
         try {
-            const testCaseInsertResult = await dbService.insertTestCase(testCase)
-            // testTime 저장
-            await dbService.insertTestTime(testCaseInsertResult)
+            // mysql 저장
+            const { testCaseObj, testCaseId } = await dbService.insertTestCase(testCase)
+            // testTime 저장 - redis
+            const obj = {
+                interval: Number(testCaseObj.interval),
+                startDate: Number(testCaseObj.test_start_date),
+                endDate: Number(testCaseObj.test_end_date),
+                testCaseId
+            }
+            const arr = calTargetTimesArr(obj)
+            // target_time 데이터 등록 - redis
+            await redisService.setTargetTimes(arr)
             res.status(httpStatus.OK).send({ data: true })
         } catch (e) {
             BAD_REQUEST(res)
@@ -127,9 +134,17 @@ const createTestCaseFile = async (req, res) => {
         const testCaseArr = xlsxBufferToJson(testCaseFile)
         for (const val of testCaseArr) {
             // mysql 저장
-            const testCaseInsertResult = await dbService.insertTestCase(val)
-            // testTime 저장
-            await dbService.insertTestTime(testCaseInsertResult)
+            const { testCaseObj, testCaseId } = await dbService.insertTestCase(val)
+            // testTime 저장 - redis
+            const obj = {
+                interval: Number(testCaseObj.interval),
+                startDate: Number(testCaseObj.test_start_date),
+                endDate: Number(testCaseObj.test_end_date),
+                testCaseId
+            }
+            const arr = calTargetTimesArr(obj)
+            // target_time 데이터 등록 - redis
+            await redisService.setTargetTimes(arr)
         }
         res.status(httpStatus.OK).send({ data: true })
     } catch (e) {
@@ -200,4 +215,21 @@ module.exports = {
     createTestCaseFile,
     createChainInfo,
     createChainTestData
+}
+
+// redis version
+const calTargetTimesArr = ({ interval, startDate, endDate, testCaseId }) => {
+    let arr = [];
+    let targetTime = startDate
+    while (targetTime <= endDate) {
+        if (rows.length > MAX_TEST_TIME_AMOUNT) {
+            return arr
+        }
+        arr.push({
+            score: targetTime,
+            value: `${testCaseId}:${targetTime}`
+        })
+        targetTime += interval
+    }
+    return arr
 }

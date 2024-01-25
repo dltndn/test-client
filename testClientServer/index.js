@@ -4,7 +4,7 @@ const cors = require('cors');
 const app = express()
 
 const routes = require("./routes")
-const { dbService } = require("./services")
+const { dbService, redisService } = require("./services")
 
 const PORT = process.env.PORT
 
@@ -17,6 +17,7 @@ app.use(routes)
 const server = app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
   dbService.connectDb()
+  redisService.connectRedis()
 })
 
 // 생각
@@ -43,6 +44,7 @@ process.on('SIGTERM', async () => {
   console.log('SIGTERM received');
   if (server) {
     dbService.destroyDb();
+    redisService.disconnectRedis()
     server.close();
   }
 });

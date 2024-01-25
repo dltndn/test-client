@@ -5,14 +5,7 @@ const RANGE_INDEX = 2
 
 const runTest = async (req, res) => {
     try {
-        const currentTime = Math.floor(Date.now() / 1000)
-        // const currentTime = 1706082006
-        const testTimes = await dbService.getTestTime(currentTime-RANGE_INDEX, currentTime+RANGE_INDEX)
-        // if (!testTimes[0]) {
-        //     res.status(httpStatus.NO_CONTENT).send({ data: true })
-        // }
-        // 2. is_web_test 값에 따라 테스트 실행
-        const testCaseId = testTimes[0].test_case_id
+        const testCaseId = req.params.testCaseId
         const testCaseResult = await dbService.getTestCase(testCaseId)
         let result;
         if (testCaseResult[0].is_web_test === 0) {
