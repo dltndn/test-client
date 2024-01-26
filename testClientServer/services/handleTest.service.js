@@ -1,44 +1,77 @@
 const axios = require("axios")
-
-const LIMIT_TIME = 500
+const Web3 = require('web3');
+const etc = require("../utils/etc");
+const { testNodeState } = require("./ethers.service");
+const { sendSlack } = require("./etc.service");
 
 /**
  * 
  * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
  * @description - 타켓 엔드포인트의 응답 시간 계산
  */
-const calResTime = async (testData) => {
+const calResTime = async (testData, isWebTest) => {
     const _startTime = Date.now()
-    const targetTestResult = await reqToTarget(testData)
-    const _endTime = Date.now()
-    const resMs = _endTime - _startTime
-    console.log(`testDataId(${testData.id}) 응답 속도: ${resMs} ms`)
-    const httpStatusCode = targetTestResult.status
-    const dataResult = targetTestResult.data
-    
-    const isSuccess = validateSuccess(resMs, httpStatusCode)
-    console.log(`성공 여부: ${isSuccess}\n`)
-
-    return {
-        resMs,
-        httpStatusCode,
-        isSuccess,
-        dataResult: dataResult ? JSON.stringify(dataResult): JSON.stringify({})
+    let _endTime = 0
+    let resMs = 0
+    let targetTestResult;
+    let isSuccess
+    let resObj = {
+        resMs: 0,
+        isSuccess: false,
+        dataResult: ""
     }
+    if (isWebTest) {
+        targetTestResult = await reqToWebTarget(testData)
+        _endTime = Date.now()
+        resMs = _endTime - _startTime
+        isSuccess = etc.validateWebSuccess(resMs, targetTestResult.status)
+        resObj.resMs = resMs
+        resObj.isSuccess = isSuccess
+        resObj.dataResult = JSON.stringify(targetTestResult.data)
+        resObj["httpStatusCode"] = targetTestResult.status
+        console.log(`WebTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
+        console.log(`성공 여부: ${isSuccess}\n`)
+    } else {
+        const targetTestResult = await reqToChainTarget(testData.node_url)
+        _endTime = Date.now()
+        resMs = _endTime - _startTime
+        targetTestResult.chainId ? (isSuccess = true) : (isSuccess = false)
+        resObj.resMs = resMs
+        resObj.isSuccess = isSuccess
+        resObj.dataResult = JSON.stringify(targetTestResult)
+        console.log(`ChainTestDataId(${testData.id}) 응답 속도: ${resMs} ms`)
+        console.log(`성공 여부: ${isSuccess}\n`)
+    }
+    
+    // 실패할 경우 슬랙 알림
+    if (!isSuccess) {
+        // error 발생 시간, test data id, server or chain name, test data name, res data
+        let slackMsg = `        * 에러 정보 * \n
+        ${new Date().toLocaleString("ko-KR")} \n
+        ${testData.name} \n
+        ${resObj.dataResult}
+        `
+        if (await sendSlack(slackMsg)) {
+            console.log("Error 메세지 발송 성공(Slack)")
+        } else {
+            console.log("Error 메세지 발송 실패(Slack)")
+        }
+    }
+    
+    return resObj
 }
 
 /**
  * 
- * @param {*} testData - TestData 테이블과 TestServerInfo 테이블의 모든 컬럼
+ * @param {*} testData - WebTestData 테이블과 TestServerInfo 테이블의 모든 컬럼
  * @returns 타켓 엔드포인트의 응답 데이터
  */
-const reqToTarget = async (testData) => {
+const reqToWebTarget = async (testData) => {
     const instance = axios.create({
-        baseURL: testData.host,
+        baseURL: `${testData.protocol}://${testData.host}`,
         headers: testData.header
     });
-    const path = getPath(testData.path, testData.query, testData.parameter)
-    console.log("path:", path)
+    const path = etc.getPath(testData.path, testData.qry_parameter, testData.path_parameter)
     let result;
     try {
         switch (testData.http_method) {
@@ -68,40 +101,17 @@ const reqToTarget = async (testData) => {
     }
 }
 
+/**
+ * 
+ * @param {*} rpcUrl 
+ * @returns obj { chainId: null | number, errorData: string }
+ */
+const reqToChainTarget = async (rpcUrl) => {
+    return await testNodeState(rpcUrl)
+}
+
 module.exports = {
-    reqToTarget,
-    calResTime
-}
-
-const validateSuccess = (resMs, httpStatusCode) => {
-    if (resMs > LIMIT_TIME) {
-        return false
-    }
-    if (!(httpStatusCode >= 200 && httpStatusCode < 300)) {
-        return false
-    }
-    if (httpStatusCode === 204) {
-        return false
-    }
-    return true
-}
-
-const getPath = (pathStr, query, parameter) => {
-    const pathIndex = pathStr.indexOf("!")
-    const queryIndex = pathStr.indexOf("?")
-    if (pathIndex !== -1) {
-        // path parameter
-        const preStr = pathStr.slice(0, pathIndex)
-        const inStr = parameter
-        const postStr = pathStr.slice(pathIndex+1)
-        return preStr + inStr + postStr
-    }
-    if (queryIndex !== -1) {
-        // query parameter
-        const preStr = pathStr.slice(0, queryIndex)
-        const inStr = `?${query}=${parameter}`
-        const postStr = pathStr.slice(queryIndex+1)
-        return preStr + inStr + postStr
-    }
-    return pathStr
+    calResTime,
+    reqToWebTarget,
+    reqToChainTarget
 }
