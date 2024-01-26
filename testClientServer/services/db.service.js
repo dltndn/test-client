@@ -434,8 +434,8 @@ const deleteTestTime = (testTimeId) => {
 
 function connectDb() {
     conn.connect((err) => {
-        if (err) console.error("Db connection error: ", err)
-        else console.log("Db connected.")
+        if (err) console.error("Mysql connection error: ", err)
+        else console.log("Mysql connected.")
     })
 }
 

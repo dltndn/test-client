@@ -18,6 +18,7 @@ const server = app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
   dbService.connectDb()
   redisService.connectRedis()
+  console.log(`pid: ${process.pid}`)
 })
 
 // 생각
@@ -49,3 +50,8 @@ process.on('SIGTERM', async () => {
   }
 });
 
+process.on('beforeExit', async () => {
+  dbService.destroyDb();
+  // pid 삭제
+  await redisService.disconnectRedis()
+});

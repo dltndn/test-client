@@ -1,5 +1,5 @@
 const httpStatus = require("http-status")
-const { dbService, testService, ethersService } = require("../services")
+const { dbService, testService, redisService, ethersService } = require("../services")
 
 const runTest = async (req, res) => {
     try {
@@ -20,9 +20,10 @@ const runTest = async (req, res) => {
         }
 
         // 4. test 완료 컬럼들 TestTime table에서 삭제 - 보류
-
+        await redisService.deleteWorkingPid()
         res.status(httpStatus.OK).send({ data: true })
     } catch (e) {
+        await redisService.deleteWorkingPid()
         res.status(httpStatus.OK).send({ data: true })
     }
 }

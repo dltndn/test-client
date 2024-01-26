@@ -3,6 +3,7 @@ const redis = require("redis");
 const MAX_REDIS_MEMORY = 30000000
 const LIMIT_INDEX = 0.7
 
+const PID_MANAGEMENT = 'PidManagement'
 const EXIST_KEY = 'TestClient'
 const TEST_TIME_KEY = 'TestTime'
 const MISSING_IDS = 'MissingIds'
@@ -19,11 +20,12 @@ const client = redis.createClient({
 
 // redis 연결
 const connectRedis = async () => {
-//   client.on("error", (err) => console.log("Redis Client Error", err));
+  client.on("error", (err) => console.log("Redis Client Error", err));
 
   try {
     await client.connect();
     console.log("Redis connected");
+    // pid 등록 
   } catch (e) {
     console.error("Error connecting to Redis:", e);
   }
@@ -34,10 +36,49 @@ const disconnectRedis = async () => {
   try {
     await client.disconnect();
     console.log("Redis disconnected");
+    // pid 등록 해제
   } catch (e) {
     console.error("Error disconnecting from Redis:", e);
   }
 };
+
+// 사용 중인 process pid 확인
+const getWorkingPid = async () => {
+    try {
+        const result = await client.lRange(PID_MANAGEMENT, 0, -1)
+        return result
+    } catch (e) {
+        console.error("Error getWorkingPid", e)
+        return false
+    }
+}
+
+// 사용 중인 process pid 추가
+const setWorkingPid = async () => {
+    try {
+        await client.lPush(PID_MANAGEMENT, String(process.pid))
+        return true
+    } catch (e) {
+        console.error("Error setWorkingPid", e)
+        return false
+    }
+}
+
+// 사용 중인 process pid 삭제
+const deleteWorkingPid = async () => {
+    try {
+        const workingPids = await getWorkingPid()
+        for (const pid of workingPids) {
+            if (Number(pid) === process.pid) {
+                await client.lRem(PID_MANAGEMENT, 0, String(pid))
+            }
+        }
+        return true
+    } catch (e) {
+        console.error("Error deleteWorkingPid", e)
+        return false
+    }
+}
 
 // redis 저장 공간 확인
 const isMemorySpaceAvailable = async () => {
@@ -131,5 +172,8 @@ module.exports = {
   setTargetTimes,
   getTestCaseIds,
   deleteTargetTimes,
-  collectMissingIds
+  collectMissingIds,
+  getWorkingPid,
+  setWorkingPid,
+  deleteWorkingPid
 };
